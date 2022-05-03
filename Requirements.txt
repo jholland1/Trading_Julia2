@@ -1,0 +1,4 @@
+alpaca-trade-api
+pandas
+matplotlib
+datetime
