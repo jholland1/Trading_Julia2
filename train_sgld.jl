@@ -18,7 +18,7 @@ plotlyjs() #use plotlyjs backend for interactive plots
 
 # nepochs = 100
 # nsamples = 10
-nepochs=500000
+nepochs=1000000
 nsamples=5000
 @assert nepochs > nsamples
 # function train_logreg(; model, loss, data, holdout, grad_fun, steps, update)
@@ -26,7 +26,7 @@ function train_logreg(;steps, update, samples)
   nodes = 20
   layers = 1
   inputs= 5
-  reg_per_weight = 0.0001f0*561f0 #561 corresponds to # of params in a 1L20N network
+  reg_per_weight = 0.0000001f0*561f0 #561 corresponds to # of params in a 1L20N network
   # prior_reg = 0.000001f0 #Weight regularization per weight!! 
   dropout = 0.0f0
 
@@ -46,9 +46,9 @@ function train_logreg(;steps, update, samples)
   reg(x) = prior_reg*sum(xs.^2.0f0 for xs in x) #Regularization function applied to Flux.params(m)
 
   #seq_len defines the number of timesteps in a batch
-  seq_len = 20
-  warmup = 5 #defines number of warmup iterations to perform in the batch
-  window = 3
+  seq_len = 60
+  warmup = 20 #defines number of warmup iterations to perform in the batch
+  window = 10
   #253 trading days in year
   holdout_batches = 3 #defines number of holdout batches to hold for holdout
   start = DateTime(2013, 8, 1)
@@ -249,7 +249,7 @@ sgd(∇L, θᵢ, t, br, pr, η = 0.001) = begin
   return θᵢ
 end
 #default a=10, b=1000, γ=0.9
-sgld(∇L, θᵢ, t, br, pr, a = 10.0f0, b = 10000.0f0, γ = 0.9f0) = begin
+sgld(∇L, θᵢ, t, br, pr, a = 50.0f0, b = 100000.0f0, γ = 0.9f0) = begin
   ϵ = a*(b + t)^-γ
   η = ϵ.*randn(Float32,size(θᵢ))
   Δθᵢ = ϵ.*pr.*θᵢ .+ br*0.5f0ϵ*∇L[θᵢ] + η #Prior loss gradient+gradient term+randomness
