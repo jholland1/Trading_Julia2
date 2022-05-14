@@ -18,8 +18,8 @@ plotlyjs() #use plotlyjs backend for interactive plots
 
 # nepochs = 100
 # nsamples = 10
-nepochs=1000000
-nsamples=5000
+nepochs=100
+nsamples=50
 @assert nepochs > nsamples
 # function train_logreg(; model, loss, data, holdout, grad_fun, steps, update)
 function train_logreg(;steps, update, samples)
@@ -43,12 +43,12 @@ function train_logreg(;steps, update, samples)
   bias_init=Flux.kaiming_normal(gain=0.0001f0)
 
   #I wouldn't use this...I don't think weight regularization is implemented correctly in SGD and especially SGLD
-  reg(x) = prior_reg*sum(xs.^2.0f0 for xs in x) #Regularization function applied to Flux.params(m)
+  #reg(x) = prior_reg*sum(xs.^2.0f0 for xs in x) #Regularization function applied to Flux.params(m)
 
   #seq_len defines the number of timesteps in a batch
-  seq_len = 60
+  seq_len = 20
   warmup = 20 #defines number of warmup iterations to perform in the batch
-  window = 10
+  window = 5
   #253 trading days in year
   holdout_batches = 3 #defines number of holdout batches to hold for holdout
   start = DateTime(2013, 8, 1)
@@ -86,6 +86,25 @@ function train_logreg(;steps, update, samples)
   else
     println("Batching using $(nbatches) of $(batches) batches")
   end
+  #p[1] = m[1].cell.Wi  
+  #p[2] = m[1].cell.Wh
+  #p[3] = m[1].cell.b
+  #p[4] = m[1].cell.s
+  #p[5] = m[2].weight
+  #p[5] = m[2].bias
+  
+  #States are returned in params
+  if layers==1
+    #            Wi   Wh    b     s     W    b
+    trainable = [true true  true  false true true]
+    regularize= [1f0  0f0   0f0   0f0   1f0  0f0 ]
+  else
+    #            Wi    Wh    b     s     Wi   Wh    b     s     W    b
+    trainable = [true  true  true  false true true  true  false true true]
+    regularize= [1f0   0f0   0f0   0f0   1f0  0f0   0f0   0f0   1f0  0f0 ]
+  end
+
+
 
   if layers == 1
     if layer == Flux.RNNCell
@@ -103,9 +122,21 @@ function train_logreg(;steps, update, samples)
         Flux.Dropout(dropout),Flux.Recur(layer(nodes,nodes,init=weight_init,initb=bias_init)),Flux.Dropout(dropout),Dense(nodes,1,NNlib.tanh_fast))
     end
   end
-  nparams = sum(length,params(m))
+  nparams = sum(length,Flux.params(m))
   println("Number of parameters in model: $(nparams)")
   prior_reg = reg_per_weight/convert(Float32,nparams)
+
+  function reg(x)
+    i = 1
+    tot = 0f0
+    for xs in x 
+      if trainable[i] && regularize[i] == 1f0
+        tot+=prior_reg.*sum(xs.^2f0)
+      end
+      i+=1
+    end
+    return tot
+  end
   
   function loss(x::Vector{Vector{Float32}},y::Vector{Vector{Float32}})
     yp = [(m(xi)[1]+1.0f0)/2.0f0 for xi in x]
@@ -193,7 +224,7 @@ function train_logreg(;steps, update, samples)
     s = sort(sample(1:batches,nbatches,replace=false))
     ∇L = gradient(()->loss_serial(train_X[s],train_Y[s]), θ)
     
-    trainlosses = [trainloss()+sum(reg,θ₀); zeros(steps)]
+    trainlosses = [trainloss()+reg(θ); zeros(steps)]
     # testlosses = [testloss(); zeros(steps)]
     testreturns = [testreturn(); zeros(steps)]
     weights = [θ₀; zeros(nsamples, length(θ₀))]
@@ -206,12 +237,15 @@ function train_logreg(;steps, update, samples)
       # Flux.reset!(m)
       θ = Flux.params(m)
       ∇L = gradient(()->loss_serial(train_X[s],train_Y[s]), θ)
-      # foreach(θᵢ -> update(∇L, θᵢ, t), θ)
-      # ∇L = grad_loss(X,Y)
-      # Flux.reset!(m)
-      # θ = Flux.params(m)
-      # println(θ)
-      foreach(θᵢ -> update(∇L, θᵢ, t, batch_ratio, prior_reg), θ)    
+
+      # foreach(θᵢ -> update(∇L, θᵢ, t, batch_ratio, prior_reg), θ)  
+      i = 1
+      for θᵢ in θ
+        if trainable[i]
+          θᵢ = update(∇L, θᵢ, t, batch_ratio, prior_reg,regularize[i])
+        end
+        i+=1
+      end
       # Bookkeeping
       if t >= steps-nsamples
         weights[t-(steps-nsamples)+1, :] = paramvec(θ)
@@ -220,7 +254,7 @@ function train_logreg(;steps, update, samples)
       # shift!(weights)
       Flux.testmode!(m)
       if prior_reg>0.0f0
-        regularizer = sum(reg,θ)
+        regularizer = reg(θ)
       else 
         regularizer = 0.0f0
       end
@@ -243,16 +277,16 @@ function train_logreg(;steps, update, samples)
     
 end
 
-sgd(∇L, θᵢ, t, br, pr, η = 0.001) = begin
-  Δθᵢ = η*(br*∇L[θᵢ] .+ pr.*2.0f0.*θᵢ) #Second term is gradient due to prior loss on weights
+sgd(∇L, θᵢ, t, br, pr, r, η = 0.001) = begin
+  Δθᵢ = η*(br*∇L[θᵢ] .+ r.*pr.*2.0f0.*θᵢ) #Second term is gradient due to prior loss on weights
   θᵢ .-= Δθᵢ 
   return θᵢ
 end
 #default a=10, b=1000, γ=0.9
-sgld(∇L, θᵢ, t, br, pr, a = 50.0f0, b = 100000.0f0, γ = 0.9f0) = begin
+sgld(∇L, θᵢ, t, br, pr, r ,a = 50.0f0, b = 100000.0f0, γ = 0.9f0) = begin
   ϵ = a*(b + t)^-γ
   η = ϵ.*randn(Float32,size(θᵢ))
-  Δθᵢ = ϵ.*pr.*θᵢ .+ br*0.5f0ϵ*∇L[θᵢ] + η #Prior loss gradient+gradient term+randomness
+  Δθᵢ = r.*ϵ.*pr.*θᵢ .+ br*0.5f0ϵ*∇L[θᵢ] + η #Prior loss gradient+gradient term+randomness
   θᵢ .-= Δθᵢ
 end
 
