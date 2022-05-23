@@ -19,20 +19,20 @@ plotlyjs() #use plotlyjs backend for interactive plots
 # nepochs = 100
 # nsamples = 10
 
-nepochs=50000
-nsamples=20000
+nepochs=4000000
+nsamples=50000
 
 @assert nepochs > nsamples
 # function train_logreg(; model, loss, data, holdout, grad_fun, steps, update)
 function train_logreg(;steps, update, samples)
-  nodes = 20
+  nodes = 10
   layers = 1
   inputs= 5
-  reg_per_weight = 0.0000000001f0*561f0 #561 corresponds to # of params in a 1L20N network
+  reg_per_weight = 0.000001f0*561f0 #561 corresponds to # of params in a 1L20N network
   # prior_reg = 0.000001f0 #Weight regularization per weight!! 
   dropout = 0.0f0
 
-  nbatches = 10
+  nbatches = 1
 
   layer=Flux.RNNCell
   # layer=Flux.LSTMCell
@@ -99,11 +99,11 @@ function train_logreg(;steps, update, samples)
   if layers==1
     #            Wi   Wh    b     s     W    b
     trainable = [true true  true  false true true]
-    regularize= [1f0  0f0   1f0   0f0   1f0  1f0 ]
+    regularize= [1f0  1f0   1f0   0f0   1f0  1f0 ]
   else
     #            Wi    Wh    b     s     Wi   Wh    b     s     W    b
     trainable = [true  true  true  false true true  true  false true true]
-    regularize= [1f0   0f0   0f0   0f0   1f0  0f0   0f0   0f0   1f0  0f0 ]
+    regularize= [1f0   1f0   0f0   0f0   1f0  1f0   0f0   0f0   1f0  0f0 ]
   end
 
 
@@ -289,7 +289,7 @@ sgd(∇L, θᵢ, t, br, pr, r, η = 1.0) = begin
 end
 #default a=10, b=1000, γ=0.9
 
-sgld(∇L, θᵢ, t, br, pr, r ,a =0.1f0, b = 100000f0, γ = 0.33333333f0) = begin
+sgld(∇L, θᵢ, t, br, pr, r ,a = 0.04f0, b = 5000f0, γ = 0.33333333f0) = begin
   ϵ = a*(b + t)^-γ
   η = ϵ.*randn(Float32,size(θᵢ))
   Δθᵢ = clamp!(r*ϵ*pr*θᵢ + br*0.5f0ϵ*∇L[θᵢ] + η,-1.0f0,1.0f0) #Prior loss gradient+gradient term+randomness

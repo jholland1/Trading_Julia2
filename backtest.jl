@@ -1,4 +1,4 @@
-using Plots, JLD, Flux, CSV, DataFrames, Dates, TimeZones, BusinessDays
+using Plots, JLD, Flux, CSV, DataFrames, Dates, TimeZones, BusinessDays, Random
 using BSON: @load
 
 include("scaling_funs.jl") #Gets us rsc() and sc()
