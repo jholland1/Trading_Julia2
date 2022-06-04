@@ -21,8 +21,11 @@ plotlyjs() #use plotlyjs backend for interactive plots
 # nepochs = 100
 # nsamples = 10
 
-nepochs=3000000
-nsamples=150000
+#nepochs=3000000
+#nsamples=150000
+
+nepochs = 300
+nsamples = 30
 
 @assert nepochs > nsamples
 # function train_logreg(; model, loss, data, holdout, grad_fun, steps, update)
@@ -36,8 +39,8 @@ function train_logreg(;steps, update, samples)
 
   nbatches = 6
 
-  layer=Flux.RNNCell
-  # layer=Flux.LSTMCell
+  # layer=Flux.RNNCell
+  layer=Flux.LSTMCell
   # layer=Flux.GRUCell
 
   # act = NNlib.leakyrelu #Only for layer=Flux.RNNCell
@@ -99,13 +102,26 @@ function train_logreg(;steps, update, samples)
   
   #States are returned in params
   if layers==1
-    #            Wi   Wh    b     s     W    b
-    trainable = [true true  true  false true true]
-    regularize= [1f0  1f0   1f0   0f0   1f0  1f0 ]
+    if layer == Flux.RNNCell
+      #            Wi   Wh    b     s     W    b
+      trainable = [true true  true  false true true]
+      regularize= [1f0  1f0   1f0   0f0   1f0  1f0 ]
+    else #Flux.LSTMCell (Not implemented for GRUCell yet)
+      # Flux.LSTMCell has an extra vector in state0 
+      #            Wi   Wh    b     s1    s2    W    b
+      trainable = [true true  true  false false true true]
+      regularize= [1f0  1f0   1f0   0f0   0f0   1f0  1f0 ]
+    end
   else
-    #            Wi    Wh    b     s     Wi   Wh    b     s     W    b
-    trainable = [true  true  true  false true true  true  false true true]
-    regularize= [1f0   1f0   0f0   0f0   1f0  1f0   0f0   0f0   1f0  0f0 ]
+    if layer == Flux.RNNCell
+      #            Wi    Wh    b     s     Wi   Wh    b     s     W    b
+      trainable = [true  true  true  false true true  true  false true true]
+      regularize= [1f0   1f0   0f0   0f0   1f0  1f0   0f0   0f0   1f0  0f0 ]
+    else 
+      #            Wi    Wh    b     s1    s2    Wi   Wh    b     s     W    b
+      trainable = [true  true  true  false false true true  true  false true true]
+      regularize= [1f0   1f0   0f0   0f0   0f0   1f0  1f0   0f0   0f0   1f0  0f0 ]
+    end
   end
 
 
@@ -129,6 +145,9 @@ function train_logreg(;steps, update, samples)
   nparams = sum(length,Flux.params(m))
   println("Number of parameters in model: $(nparams)")
   prior_reg = reg_per_weight/convert(Float32,nparams)
+
+  # println("Number of ")
+  # size()
 
   function reg(x)
     i = 1
