@@ -24,8 +24,8 @@ plotlyjs() #use plotlyjs backend for interactive plots
 #nepochs=3000000
 #nsamples=150000
 
-nepochs = 300
-nsamples = 30
+nepochs = 3000
+nsamples = 300
 
 @assert nepochs > nsamples
 # function train_logreg(; model, loss, data, holdout, grad_fun, steps, update)
@@ -33,11 +33,11 @@ function train_logreg(;steps, update, samples)
   nodes = 20
   layers = 1
   inputs= 5
-  reg_per_weight = 0.000001f0*561f0 #561 corresponds to # of params in a 1L20N network
-  # prior_reg = 0.000001f0 #Weight regularization per weight!! 
+  # reg_per_weight = 0.000001f0*561f0 #561 corresponds to # of params in a 1L20N network
+  prior_reg = 0.000001f0 #Weight regularization per weight!! 
   dropout = 0.0f0
 
-  nbatches = 6
+  nbatches = 1
 
   # layer=Flux.RNNCell
   layer=Flux.LSTMCell
@@ -144,7 +144,8 @@ function train_logreg(;steps, update, samples)
   end
   nparams = sum(length,Flux.params(m))
   println("Number of parameters in model: $(nparams)")
-  prior_reg = reg_per_weight/convert(Float32,nparams)
+  # prior_reg = reg_per_weight/convert(Float32,nparams)
+  # prior_reg = reg_per_weight
 
   # println("Number of ")
   # size()
