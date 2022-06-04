@@ -6,6 +6,8 @@ using StatsBase: sample
 using JLD
 using BSON: @save
 
+#test
+
 include("scaling_funs.jl") #gives us rsc() and sc()
 #=
 Can use the following outside of VS Code
