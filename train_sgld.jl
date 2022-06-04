@@ -19,20 +19,20 @@ plotlyjs() #use plotlyjs backend for interactive plots
 # nepochs = 100
 # nsamples = 10
 
-nepochs=4000000
-nsamples=50000
+nepochs=3000000
+nsamples=150000
 
 @assert nepochs > nsamples
 # function train_logreg(; model, loss, data, holdout, grad_fun, steps, update)
 function train_logreg(;steps, update, samples)
-  nodes = 10
+  nodes = 20
   layers = 1
   inputs= 5
   reg_per_weight = 0.000001f0*561f0 #561 corresponds to # of params in a 1L20N network
   # prior_reg = 0.000001f0 #Weight regularization per weight!! 
   dropout = 0.0f0
 
-  nbatches = 1
+  nbatches = 6
 
   layer=Flux.RNNCell
   # layer=Flux.LSTMCell
@@ -41,8 +41,8 @@ function train_logreg(;steps, update, samples)
   # act = NNlib.leakyrelu #Only for layer=Flux.RNNCell
   act = NNlib.tanh_fast
 
-  weight_init=Flux.kaiming_normal(gain=1.0f0)
-  bias_init=Flux.kaiming_normal(gain=1.0f0)
+  weight_init=Flux.kaiming_normal(gain=1f0)
+  bias_init=Flux.kaiming_normal(gain=1f0)
 
   #I wouldn't use this...I don't think weight regularization is implemented correctly in SGD and especially SGLD
   #reg(x) = prior_reg*sum(xs.^2.0f0 for xs in x) #Regularization function applied to Flux.params(m)
@@ -52,7 +52,7 @@ function train_logreg(;steps, update, samples)
   warmup = 5 #defines number of warmup iterations to perform in the batch
   window = 3
   #253 trading days in year
-  holdout_batches = 3 #defines number of holdout batches to hold for holdout
+  holdout_batches = 12 #defines number of holdout batches to hold for holdout
   start = DateTime(2013, 8, 1)
   VOO = yahoo(:VOO,YahooOpt(period1=start))
   AAPL = yahoo(:AAPL,YahooOpt(period1=start))
