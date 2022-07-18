@@ -21,20 +21,20 @@ plotlyjs() #use plotlyjs backend for interactive plots
 # nepochs = 100
 # nsamples = 10
 
-#nepochs=3000000
-#nsamples=150000
+nepochs=2500000
+nsamples=200000
 
-nepochs = 3000
-nsamples = 300
+# nepochs = 3000
+# nsamples = 300
 
 @assert nepochs > nsamples
 # function train_logreg(; model, loss, data, holdout, grad_fun, steps, update)
 function train_logreg(;steps, update, samples)
-  nodes = 20
+  nodes = 10
   layers = 1
   inputs= 5
   # reg_per_weight = 0.000001f0*561f0 #561 corresponds to # of params in a 1L20N network
-  prior_reg = 0.000001f0 #Weight regularization per weight!! 
+  prior_reg = 0.000000001f0 #Weight regularization per weight!! 
   dropout = 0.0f0
 
   nbatches = 1
@@ -311,7 +311,7 @@ sgd(∇L, θᵢ, t, br, pr, r, η = 1.0) = begin
 end
 #default a=10, b=1000, γ=0.9
 
-sgld(∇L, θᵢ, t, br, pr, r ,a = 0.04f0, b = 5000f0, γ = 0.33333333f0) = begin
+sgld(∇L, θᵢ, t, br, pr, r ,a = 0.1f0, b = 5000f0, γ = 0.33333333f0) = begin
   ϵ = a*(b + t)^-γ
   η = ϵ.*randn(Float32,size(θᵢ))
   Δθᵢ = clamp!(r*ϵ*pr*θᵢ + br*0.5f0ϵ*∇L[θᵢ] + η,-1.0f0,1.0f0) #Prior loss gradient+gradient term+randomness
