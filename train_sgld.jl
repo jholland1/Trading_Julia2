@@ -21,7 +21,7 @@ plotlyjs() #use plotlyjs backend for interactive plots
 # nepochs = 100
 # nsamples = 10
 
-nepochs=2500000
+nepochs=3500000
 nsamples=200000
 
 # nepochs = 3000
