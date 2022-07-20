@@ -21,8 +21,8 @@ plotlyjs() #use plotlyjs backend for interactive plots
 # nepochs = 100
 # nsamples = 10
 
-nepochs=3500000
-nsamples=200000
+nepochs=750000
+nsamples=400000
 
 # nepochs = 3000
 # nsamples = 300
@@ -311,7 +311,7 @@ sgd(∇L, θᵢ, t, br, pr, r, η = 1.0) = begin
 end
 #default a=10, b=1000, γ=0.9
 
-sgld(∇L, θᵢ, t, br, pr, r ,a = 0.5f0, b = 5000f0, γ = 0.33333333f0) = begin
+sgld(∇L, θᵢ, t, br, pr, r ,a = 0.25f0, b = 5000f0, γ = 0.33333333f0) = begin
   ϵ = a*(b + t)^-γ
   η = ϵ.*randn(Float32,size(θᵢ))
   Δθᵢ = clamp!(r*ϵ*pr*θᵢ + br*0.5f0ϵ*∇L[θᵢ] + η,-1.0f0,1.0f0) #Prior loss gradient+gradient term+randomness
