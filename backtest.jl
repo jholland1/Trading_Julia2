@@ -188,7 +188,8 @@ function run_backtest(b = 0.0f0)
         else 
             istock = 2
         end
-        nshares = fld(pvalue[i],stocks[istock].close[i])
+        #nshares = fld(pvalue[i],stocks[istock].close[i]) #Discrete shares
+        nshares=pvalue[i]/stocks[istock].close[i] #Fractional shares
         if i > warmup 
             pvalue[i+1] = pvalue[i]+nshares*(stocks[istock].open[i+1]-stocks[istock].close[i])
         else 
